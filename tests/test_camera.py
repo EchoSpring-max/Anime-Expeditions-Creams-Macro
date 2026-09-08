@@ -71,3 +71,11 @@ def test_standard_camera_setup_still_adds_the_o_zoom_hold():
     camera.run_camera_setup(mouse, keyboard, hwnd=123, hold_ms=2000)
 
     assert keyboard.events == [("down", ord("O")), ("up", ord("O"))]
+
+
+def test_zoom_out_only_does_not_move_the_mouse():
+    keyboard = FakeKeyboard()
+
+    camera.zoom_out(keyboard, hold_ms=2000)
+
+    assert keyboard.events == [("down", ord("O")), ("up", ord("O"))]

@@ -47,15 +47,19 @@ def tilt_camera_top_down(mouse, hwnd) -> None:
     time.sleep(0.15)
 
 
-def run_camera_setup(mouse, keyboard, hwnd, hold_ms: float = 2000) -> None:
-    """Pin the pitch, then hold O for the standard maximum zoom-out."""
-    tilt_camera_top_down(mouse, hwnd)
-
+def zoom_out(keyboard, hold_ms: float = 2000) -> None:
+    """Hold Roblox's O key long enough to reach maximum zoom-out."""
     keyboard.key_down(ord("O"))
     try:
         time.sleep(max(0.0, hold_ms) / 1000)
     finally:
         keyboard.key_up(ord("O"))
+
+
+def run_camera_setup(mouse, keyboard, hwnd, hold_ms: float = 2000) -> None:
+    """Pin the pitch, then hold O for the standard maximum zoom-out."""
+    tilt_camera_top_down(mouse, hwnd)
+    zoom_out(keyboard, hold_ms)
 
 
 def run_camera_drag_hold(mouse, keyboard, hwnd, hold_ms: float = 2500, o_tap_ms: float = 0) -> None:

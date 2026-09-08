@@ -35,7 +35,12 @@ from core.mouse import Mouse  # noqa: E402
 
 
 CATEGORIES = ("Story", "Raid", "Expedition", "Event")
-CAMERA_PRESETS = ("Standard (Story/Raid/Event)", "Expedition", "None")
+CAMERA_PRESETS = (
+    "Zoom out only",
+    "Full macro camera (top-down)",
+    "Expedition",
+    "None",
+)
 CAPTURE_DIR = Path(constants.APP_DIR) / "MapCaptures"
 
 
@@ -59,15 +64,6 @@ def next_capture_path(root: Path, category: str, map_name: str,
         candidate = folder / f"{map_name}_{stamp}_{suffix}.png"
         suffix += 1
     return candidate
-
-
-def panorama_capture_path(root: Path, category: str, map_name: str,
-                          session: str, index: int) -> Path:
-    """Path for one numbered view in an automatic pan sequence."""
-    category = safe_component(category, "Other")
-    map_name = safe_component(map_name)
-    folder = Path(root) / category / map_name / f"Panorama_{safe_component(session, 'capture')}"
-    return folder / f"{map_name}_view_{max(1, int(index)):02d}.png"
 
 
 def save_png(frame, path: Path) -> None:
@@ -110,32 +106,11 @@ def capture_roblox_frame(hwnd: int | None = None):
     return frame
 
 
-def pan_camera(mouse: Mouse, hwnd: int, pixels: int, direction: str,
-               duration: float = 0.3, steps: int = 18) -> None:
-    """Right-drag inside Roblox once, always releasing the mouse button."""
-    pixels = max(1, abs(int(pixels)))
-    # Dragging the scene left turns the camera view right (and vice versa).
-    delta = -pixels if str(direction).casefold() == "right" else pixels
-    start = vision.ref_to_screen(hwnd, config.FIXED_WIN_W // 2, config.FIXED_WIN_H // 2)
-    end = vision.ref_to_screen(
-        hwnd, config.FIXED_WIN_W // 2 + delta, config.FIXED_WIN_H // 2)
-    mouse.move_to(*start)
-    time.sleep(0.04)
-    mouse.down("right")
-    try:
-        step_delay = max(0.0, float(duration)) / max(1, int(steps))
-        for step in range(1, max(1, int(steps)) + 1):
-            x = start[0] + (end[0] - start[0]) * step / max(1, int(steps))
-            y = start[1] + (end[1] - start[1]) * step / max(1, int(steps))
-            mouse.move_to(round(x), round(y))
-            time.sleep(step_delay)
-    finally:
-        mouse.up("right")
-
-
 def run_camera_preset(mouse: Mouse, keyboard: Keyboard, hwnd: int, preset: str) -> None:
     """Run the same camera sequence used by the macro for this mode."""
-    if str(preset).startswith("Standard"):
+    if str(preset) == "Zoom out only":
+        camera.zoom_out(keyboard, hold_ms=2000)
+    elif str(preset).startswith("Full macro"):
         camera.run_camera_setup(mouse, keyboard, hwnd, hold_ms=2000)
     elif str(preset) == "Expedition":
         camera.run_camera_drag_hold(mouse, keyboard, hwnd, hold_ms=730, o_tap_ms=100)
@@ -149,18 +124,12 @@ class MapCamera:
         self.preview_image = None
         self.hotkey_registered = False
         self.assets_dir = find_assets_dir(Path(constants.APP_DIR))
-        self.auto_running = False
-        self.auto_stop_requested = False
-        self.auto_hwnd = 0
-        self.auto_index = 0
-        self.auto_total = 0
-        self.auto_session = ""
-        self.auto_mouse = Mouse()
+        self.mouse = Mouse()
         self.keyboard = Keyboard()
 
         root.title("Anime Expeditions Map Camera")
-        root.geometry("680x650")
-        root.minsize(600, 560)
+        root.geometry("620x580")
+        root.minsize(520, 500)
         root.attributes("-topmost", True)
         root.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -203,37 +172,10 @@ class MapCamera:
             setup_form, text="Apply Now", command=self.apply_camera_now,
         ).pack(side="left", padx=(8, 0))
 
-        pan_form = ttk.LabelFrame(shell, text="Automatic panorama", padding=8)
-        pan_form.pack(fill="x", pady=(12, 0))
-        for column, label in enumerate(("Views", "Step (pixels)", "Direction", "Settle (seconds)")):
-            ttk.Label(pan_form, text=label).grid(row=0, column=column, sticky="w", padx=(0, 8))
-        self.pan_views = tk.StringVar(value="8")
-        self.pan_step = tk.StringVar(value="140")
-        self.pan_direction = tk.StringVar(value="Right")
-        self.pan_settle = tk.StringVar(value="0.7")
-        ttk.Spinbox(pan_form, from_=2, to=36, textvariable=self.pan_views, width=8).grid(
-            row=1, column=0, sticky="ew", padx=(0, 8))
-        ttk.Spinbox(pan_form, from_=20, to=500, increment=10,
-                    textvariable=self.pan_step, width=12).grid(
-            row=1, column=1, sticky="ew", padx=(0, 8))
-        ttk.Combobox(pan_form, textvariable=self.pan_direction, values=("Right", "Left"),
-                     state="readonly", width=10).grid(row=1, column=2, sticky="ew", padx=(0, 8))
-        ttk.Spinbox(pan_form, from_=0.1, to=5.0, increment=0.1,
-                    textvariable=self.pan_settle, width=12).grid(row=1, column=3, sticky="ew")
-        ttk.Label(
-            pan_form,
-            text="Captures the starting view, then right-drags and captures each next angle. F9 stops safely.",
-        ).grid(row=2, column=0, columnspan=4, sticky="w", pady=(6, 0))
-
         actions = ttk.Frame(shell)
         actions.pack(fill="x", pady=12)
         self.capture_button = ttk.Button(actions, text="Capture (F8)", command=self.begin_capture)
         self.capture_button.pack(side="left")
-        self.auto_button = ttk.Button(actions, text="Auto Pan + Capture", command=self.begin_auto_pan)
-        self.auto_button.pack(side="left", padx=(8, 0))
-        self.stop_button = ttk.Button(
-            actions, text="Stop (F9)", command=self.stop_auto_pan, state="disabled")
-        self.stop_button.pack(side="left", padx=(8, 0))
         self.install_button = ttk.Button(
             actions, text="Install in Macro", command=self.install_capture, state="disabled")
         self.install_button.pack(side="left", padx=(8, 0))
@@ -250,12 +192,10 @@ class MapCamera:
         try:
             import keyboard
             keyboard.add_hotkey("f8", lambda: self.root.after(0, self.begin_capture))
-            keyboard.add_hotkey("f9", lambda: self.root.after(0, self.stop_auto_pan))
             self.hotkey_registered = True
         except Exception:
             # The button remains available when Windows denies global hooks.
             self.root.bind("<F8>", lambda _event: self.begin_capture())
-            self.root.bind("<F9>", lambda _event: self.stop_auto_pan())
 
     def begin_capture(self) -> None:
         if str(self.capture_button["state"]) == "disabled":
@@ -279,7 +219,7 @@ class MapCamera:
                 hidden = True
                 wm.activate_window(hwnd)
                 run_camera_preset(
-                    self.auto_mouse, self.keyboard, hwnd, self.camera_preset.get())
+                    self.mouse, self.keyboard, hwnd, self.camera_preset.get())
                 time.sleep(0.35)
             frame = capture_roblox_frame(hwnd)
             path = next_capture_path(CAPTURE_DIR, self.category.get(), self.map_name.get())
@@ -311,7 +251,7 @@ class MapCamera:
         self.root.withdraw()
         try:
             wm.activate_window(hwnd)
-            run_camera_preset(self.auto_mouse, self.keyboard, hwnd, preset)
+            run_camera_preset(self.mouse, self.keyboard, hwnd, preset)
             self.status.set(f"Applied macro camera preset: {preset}")
         except Exception as exc:
             self.status.set(str(exc))
@@ -320,104 +260,6 @@ class MapCamera:
         finally:
             self.root.deiconify()
             self.root.lift()
-
-    def begin_auto_pan(self) -> None:
-        if self.auto_running or str(self.capture_button["state"]) == "disabled":
-            return
-        try:
-            views = min(36, max(2, int(self.pan_views.get())))
-            pixels = min(500, max(20, int(self.pan_step.get())))
-            settle = min(5.0, max(0.1, float(self.pan_settle.get())))
-        except ValueError:
-            messagebox.showerror("Map Camera", "Views, step, and settle must be numbers.", parent=self.root)
-            return
-        hwnd = wm.find_roblox_window()
-        if not hwnd:
-            messagebox.showerror("Map Camera", "Roblox was not found. Start the game and try again.", parent=self.root)
-            return
-
-        self.auto_running = True
-        self.auto_stop_requested = False
-        self.auto_hwnd = hwnd
-        self.auto_index = 0
-        self.auto_total = views
-        self.auto_pixels = pixels
-        self.auto_settle_ms = round(settle * 1000)
-        self.auto_session = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")[:-3]
-        self.capture_button.configure(state="disabled")
-        self.auto_button.configure(state="disabled")
-        self.stop_button.configure(state="normal")
-        self.install_button.configure(state="disabled")
-        self.status.set(f"Starting automatic panorama: {views} views…")
-        # A topmost tool window would receive the right-drag wherever it
-        # overlaps Roblox. Keep the Tk event loop alive but hide its surface
-        # until the panorama ends; global F9 still stops the sequence.
-        self.root.withdraw()
-        wm.activate_window(hwnd)
-        try:
-            delay = max(0, int(self.delay.get()))
-        except ValueError:
-            delay = 0
-        self.root.after(delay * 1000 + 350, self._prepare_auto_pan)
-
-    def _prepare_auto_pan(self) -> None:
-        if self.auto_stop_requested:
-            self._finish_auto_pan("Automatic panorama stopped.")
-            return
-        try:
-            if self.apply_camera_setup.get() and self.camera_preset.get() != "None":
-                run_camera_preset(
-                    self.auto_mouse, self.keyboard, self.auto_hwnd, self.camera_preset.get())
-                self.status.set(f"Applied {self.camera_preset.get()} camera setup; capturing…")
-            self.root.after(350, self._auto_pan_step)
-        except Exception as exc:
-            self._finish_auto_pan(str(exc), error=True)
-
-    def _auto_pan_step(self) -> None:
-        if self.auto_stop_requested:
-            self._finish_auto_pan("Automatic panorama stopped.")
-            return
-        try:
-            frame = capture_roblox_frame(self.auto_hwnd)
-            self.auto_index += 1
-            path = panorama_capture_path(
-                CAPTURE_DIR, self.category.get(), self.map_name.get(),
-                self.auto_session, self.auto_index)
-            save_png(frame, path)
-            self.frame = frame
-            self.last_path = path
-            self._show_preview(frame)
-            self.status.set(f"Captured view {self.auto_index}/{self.auto_total}: {path.name}")
-            if self.auto_index >= self.auto_total:
-                self._finish_auto_pan(
-                    f"Panorama complete: {self.auto_total} views saved in {path.parent}")
-                return
-            wm.activate_window(self.auto_hwnd)
-            pan_camera(
-                self.auto_mouse, self.auto_hwnd, self.auto_pixels,
-                self.pan_direction.get())
-            self.root.after(self.auto_settle_ms, self._auto_pan_step)
-        except Exception as exc:
-            self._finish_auto_pan(str(exc), error=True)
-
-    def stop_auto_pan(self) -> None:
-        if self.auto_running:
-            self.auto_stop_requested = True
-            self.status.set("Stopping after the current camera step…")
-
-    def _finish_auto_pan(self, status: str, error: bool = False) -> None:
-        self.auto_running = False
-        self.auto_stop_requested = False
-        self.capture_button.configure(state="normal")
-        self.auto_button.configure(state="normal")
-        self.stop_button.configure(state="disabled")
-        if self.frame is not None:
-            self.install_button.configure(state="normal")
-        self.status.set(status)
-        self.root.deiconify()
-        self.root.lift()
-        if error:
-            messagebox.showerror("Map Camera", status, parent=self.root)
 
     def _show_preview(self, frame) -> None:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -463,7 +305,6 @@ class MapCamera:
             try:
                 import keyboard
                 keyboard.remove_hotkey("f8")
-                keyboard.remove_hotkey("f9")
             except Exception:
                 pass
         self.root.destroy()

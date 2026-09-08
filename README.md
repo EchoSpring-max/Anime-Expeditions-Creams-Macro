@@ -158,14 +158,11 @@ Macro** also copies the current capture into `Assets/map/<Category>/` for the
 Macro Manager's Place Unit map picker. Build a standalone Windows executable
 with `python build_map_camera.py` after installing PyInstaller.
 
-For a panorama, choose the number of views, horizontal step, direction, and
-settle delay, then click **Auto Pan + Capture**. The tool focuses Roblox,
-right-drags the camera between screenshots, and stores the numbered images in
-one panorama folder. Press **F9** to stop after the current step.
-
 Keep **Apply before capturing** enabled to reproduce the macro's camera setup
-without opening the macro. Standard pins the pitch top-down and holds O for two
-seconds; Expedition uses the macro's 730 ms left rotation and 100 ms O tap.
+without opening the macro. **Zoom out only** is the default and simply holds O
+for two seconds—there is no automatic pan. Full macro camera optionally pins
+the pitch top-down first; Expedition uses the macro's 730 ms left rotation and
+100 ms O tap.
 
 ## Auto-Updater
 

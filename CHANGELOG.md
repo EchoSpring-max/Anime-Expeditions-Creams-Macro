@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.6] - 2026-09-08
+
+### Changed
+- **Zoom-only Map Camera**: removed automatic horizontal panning and made the default setup only hold O for the macro's two-second maximum zoom-out. Full top-down and Expedition framing remain optional presets.
+
 ## [0.19.5] - 2026-09-08
 
 ### New
