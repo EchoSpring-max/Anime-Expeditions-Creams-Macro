@@ -158,6 +158,11 @@ Macro** also copies the current capture into `Assets/map/<Category>/` for the
 Macro Manager's Place Unit map picker. Build a standalone Windows executable
 with `python build_map_camera.py` after installing PyInstaller.
 
+For a panorama, choose the number of views, horizontal step, direction, and
+settle delay, then click **Auto Pan + Capture**. The tool focuses Roblox,
+right-drags the camera between screenshots, and stores the numbered images in
+one panorama folder. Press **F9** to stop after the current step.
+
 ## Auto-Updater
 
 On launch, the macro checks GitHub for a newer tagged release than the one you're running. If one exists, a popup shows the version and release notes with an **Update & Restart** button. What "Update" downloads depends on how you're running it — the packaged exe swaps itself for the new exe; running from source instead swaps in the new source over your local copy. Either way your `settings.json`, saved templates, walk paths, **and anything you've changed or added in the `Assets/` folder** are never touched — updates only ever *add* Assets images that are new in a release, and it relaunches automatically. You can also trigger a manual check any time by clicking the version badge in the titlebar. (If you're using the bootstrapper, it also checks for a newer app exe on every launch on its own, independently of this.)

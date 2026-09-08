@@ -38,3 +38,32 @@ def test_find_assets_dir_accepts_macro_or_assets_folder(tmp_path: Path):
     assert map_camera.find_assets_dir(tmp_path) == assets
     assert map_camera.find_assets_dir(assets) == assets
     assert map_camera.find_assets_dir(tmp_path / "missing") is None
+
+
+def test_panorama_capture_path_numbers_views(tmp_path: Path):
+    path = map_camera.panorama_capture_path(
+        tmp_path, "Raid", "Snowy Castle", "2026-09-08_15-00", 3)
+    assert path == (tmp_path / "Raid" / "Snowy Castle" / "Panorama_2026-09-08_15-00" /
+                    "Snowy Castle_view_03.png")
+
+
+def test_pan_camera_right_drags_left_and_always_releases(monkeypatch):
+    events = []
+
+    class FakeMouse:
+        def move_to(self, x, y):
+            events.append(("move", x, y))
+
+        def down(self, button):
+            events.append(("down", button))
+
+        def up(self, button):
+            events.append(("up", button))
+
+    monkeypatch.setattr(map_camera.vision, "ref_to_screen", lambda _hwnd, x, y: (x, y))
+    monkeypatch.setattr(map_camera.time, "sleep", lambda _seconds: None)
+    map_camera.pan_camera(FakeMouse(), 123, 120, "Right", duration=0, steps=2)
+    assert events[0] == ("move", 576, 378)
+    assert events[1] == ("down", "right")
+    assert events[-2] == ("move", 456, 378)
+    assert events[-1] == ("up", "right")

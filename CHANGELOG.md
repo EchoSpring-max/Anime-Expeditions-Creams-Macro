@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.4] - 2026-09-08
+
+### New
+- **Automatic map panorama**: Map Camera can right-drag the Roblox camera in configurable left/right steps, save every angle, and stop safely with F9.
+
 ## [0.19.3] - 2026-09-08
 
 ### New
