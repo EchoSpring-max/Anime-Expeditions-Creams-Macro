@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.7] - 2026-09-08
+
+### New
+- **Absolute Dream map references**: added Crimson Shore to the Story placement picker and top-down Snowy Castle references for Raid Acts 1-3.
+
 ## [0.19.6] - 2026-09-08
 
 ### Changed
