@@ -84,7 +84,7 @@ P12="$OUT_DIR/codesign.p12"
 P12_B64="$OUT_DIR/codesign.p12.b64"
 
 # GitHub repo the secrets belong to (used only in the printed `gh` commands).
-GITHUB_REPO="Cweamy/Anime-Expeditions-Creams-Macro"
+GITHUB_REPO="EchoSpring-max/Anime-Expeditions-Creams-Macro"
 
 usage() {
     cat >&2 <<EOF

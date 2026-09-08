@@ -40,6 +40,13 @@ def _js_task_data_story_maps():
     return [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", match.group(1))]
 
 
+def _js_task_data_raid_maps():
+    src = APP_JS.read_text(encoding="utf-8")
+    match = re.search(r"raid:\s*\{.*?maps:\s*\[(.*?)\]", src, re.S)
+    assert match, "couldn't find TASK_DATA.raid.maps in ui/app.js"
+    return [a or b for a, b in re.findall(r"'([^']*)'|\"([^\"]*)\"", match.group(1))]
+
+
 def test_backend_challenge_map_lists_match():
     """main.py serves the settings; runner_constants drives the post-teleport
     "which map did it land on" search. A map in one but not the other is either
@@ -79,6 +86,17 @@ def test_every_challenge_map_has_a_reference_crop():
         folder = REPO / "Assets" / "ui" / name
         variants = sorted(folder.glob("*.png")) if folder.is_dir() else []
         assert direct.is_file() or variants, f"{name} has no crop under Assets/ui"
+
+
+def test_every_selectable_story_and_raid_map_has_a_map_card_crop():
+    """Story and Raid both use stage_select.find_and_click_map, so every map
+    exposed by either task picker needs a same-named Assets/maps template."""
+    names = _js_task_data_story_maps() + _js_task_data_raid_maps()
+    for name in names:
+        direct = REPO / "Assets" / "maps" / f"{name}.png"
+        folder = REPO / "Assets" / "maps" / name
+        variants = sorted(folder.glob("*.png")) if folder.is_dir() else []
+        assert direct.is_file() or variants, f"{name} has no crop under Assets/maps"
 
 
 def test_daily_challenge_ocr_aliases_cover_every_map():

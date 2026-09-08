@@ -2,6 +2,14 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.2] - 2026-09-08
+
+### New
+- **Absolute Dream maps**: added Crimson Shore to Story, Challenge, and Bounty map recognition.
+- **Snowy Castle raid**: added Snowy Castle to the Raid task builder with all three acts.
+- Added map-selection reference crops for Crimson Shore and Snowy Castle.
+- Switched release downloads and automatic update checks to the maintained fork.
+
 ## [0.19.1] - 2026-08-13
 
 ### Improved

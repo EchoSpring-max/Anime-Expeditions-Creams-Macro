@@ -14,7 +14,7 @@ contributors.
 ### Windows release (recommended)
 
 1. Download `Creams-Macro-Anime-Expeditions-Windows.zip` from the
-   [latest release](https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/releases/latest).
+   [latest release](https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/releases/latest).
 2. Extract the entire ZIP to a normal folder. Do not run the executable from
    inside the ZIP.
 3. Keep the executable and `Assets` folder together.
@@ -29,7 +29,7 @@ the macro can run without OCR.
 Open PowerShell and run:
 
 ```powershell
-git clone https://github.com/Cweamy/Anime-Expeditions-Creams-Macro.git
+git clone https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro.git
 Set-Location Anime-Expeditions-Creams-Macro
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
@@ -53,7 +53,7 @@ You can also double-click `run.bat` after installing the dependencies.
 In Terminal:
 
 ```bash
-git clone https://github.com/Cweamy/Anime-Expeditions-Creams-Macro.git
+git clone https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro.git
 cd Anime-Expeditions-Creams-Macro
 python3 -m venv .venv
 source .venv/bin/activate

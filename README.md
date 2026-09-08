@@ -11,14 +11,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/releases/latest">
-    <img src="https://img.shields.io/github/v/release/Cweamy/Anime-Expeditions-Creams-Macro?style=flat-square&color=blue" alt="Latest Release">
+  <a href="https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/releases/latest">
+    <img src="https://img.shields.io/github/v/release/EchoSpring-max/Anime-Expeditions-Creams-Macro?style=flat-square&color=blue" alt="Latest Release">
   </a>
-  <a href="https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/releases/latest">
-    <img src="https://img.shields.io/github/downloads/Cweamy/Anime-Expeditions-Creams-Macro/total?style=flat-square&color=green" alt="Downloads">
+  <a href="https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/releases/latest">
+    <img src="https://img.shields.io/github/downloads/EchoSpring-max/Anime-Expeditions-Creams-Macro/total?style=flat-square&color=green" alt="Downloads">
   </a>
-  <a href="https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/actions/workflows/ci.yml">
-    <img src="https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/actions/workflows/ci.yml">
+    <img src="https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License: MIT">
@@ -29,7 +29,7 @@
 </p>
 
 <p align="center">
-  <a href="https://discord.gg/FwU6ppjKNf">Discord</a> · <a href="https://www.youtube.com/@Cweamya">YouTube</a> · <a href="https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/releases/latest">Download</a>
+  <a href="https://discord.gg/FwU6ppjKNf">Discord</a> · <a href="https://www.youtube.com/@Cweamya">YouTube</a> · <a href="https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/releases/latest">Download</a>
 </p>
 
 > Looking for an **Anime Expeditions auto farm bot**, **Anime Expeditions macro**, or a way to **auto raid / auto story farm / auto expedition** in Anime Expeditions on Roblox? You're in the right place.
@@ -79,7 +79,7 @@
 
 No `git clone`, no Python needed.
 
-1. Open the [**Releases page**](https://github.com/Cweamy/Anime-Expeditions-Creams-Macro/releases/latest)
+1. Open the [**Releases page**](https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro/releases/latest)
 2. The newest release is shown at the top
 3. Under **Assets**, download **`Creams-Macro-Anime-Expeditions-Windows.zip`** (or the `-macOS` zip on a Mac)
 4. Extract it anywhere — you get the app `.exe` with an `Assets/` folder next to it — and run the exe
@@ -95,7 +95,7 @@ The only other thing you need is [Tesseract OCR](https://github.com/UB-Mannheim/
 ### Option B: Run from source
 
 ```bash
-git clone https://github.com/Cweamy/Anime-Expeditions-Creams-Macro.git
+git clone https://github.com/EchoSpring-max/Anime-Expeditions-Creams-Macro.git
 cd Anime-Expeditions-Creams-Macro
 pip install -r requirements.txt
 ```
