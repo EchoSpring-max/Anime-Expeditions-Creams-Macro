@@ -67,3 +67,23 @@ def test_pan_camera_right_drags_left_and_always_releases(monkeypatch):
     assert events[1] == ("down", "right")
     assert events[-2] == ("move", 456, 378)
     assert events[-1] == ("up", "right")
+
+
+def test_camera_presets_reuse_the_macro_sequences(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        map_camera.camera, "run_camera_setup",
+        lambda *args, **kwargs: calls.append(("standard", args, kwargs)))
+    monkeypatch.setattr(
+        map_camera.camera, "run_camera_drag_hold",
+        lambda *args, **kwargs: calls.append(("expedition", args, kwargs)))
+
+    mouse, keyboard = object(), object()
+    map_camera.run_camera_preset(mouse, keyboard, 123, "Standard (Story/Raid/Event)")
+    map_camera.run_camera_preset(mouse, keyboard, 456, "Expedition")
+    map_camera.run_camera_preset(mouse, keyboard, 789, "None")
+
+    assert calls[0] == ("standard", (mouse, keyboard, 123), {"hold_ms": 2000})
+    assert calls[1] == (
+        "expedition", (mouse, keyboard, 456), {"hold_ms": 730, "o_tap_ms": 100})
+    assert len(calls) == 2

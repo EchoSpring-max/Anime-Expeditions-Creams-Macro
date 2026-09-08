@@ -27,12 +27,15 @@ if str(REPO_DIR) not in sys.path:
 
 from core import config  # noqa: E402
 from core import constants  # noqa: E402
+from core import camera  # noqa: E402
 from core import vision  # noqa: E402
 from core import window as wm  # noqa: E402
+from core.keyboard import Keyboard  # noqa: E402
 from core.mouse import Mouse  # noqa: E402
 
 
 CATEGORIES = ("Story", "Raid", "Expedition", "Event")
+CAMERA_PRESETS = ("Standard (Story/Raid/Event)", "Expedition", "None")
 CAPTURE_DIR = Path(constants.APP_DIR) / "MapCaptures"
 
 
@@ -130,6 +133,14 @@ def pan_camera(mouse: Mouse, hwnd: int, pixels: int, direction: str,
         mouse.up("right")
 
 
+def run_camera_preset(mouse: Mouse, keyboard: Keyboard, hwnd: int, preset: str) -> None:
+    """Run the same camera sequence used by the macro for this mode."""
+    if str(preset).startswith("Standard"):
+        camera.run_camera_setup(mouse, keyboard, hwnd, hold_ms=2000)
+    elif str(preset) == "Expedition":
+        camera.run_camera_drag_hold(mouse, keyboard, hwnd, hold_ms=730, o_tap_ms=100)
+
+
 class MapCamera:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -145,6 +156,7 @@ class MapCamera:
         self.auto_total = 0
         self.auto_session = ""
         self.auto_mouse = Mouse()
+        self.keyboard = Keyboard()
 
         root.title("Anime Expeditions Map Camera")
         root.geometry("680x650")
@@ -175,6 +187,21 @@ class MapCamera:
         ttk.Combobox(form, textvariable=self.delay, values=("0", "2", "5"),
                      state="readonly", width=7).grid(row=1, column=2, sticky="ew", padx=(10, 0))
         form.columnconfigure(1, weight=1)
+
+        setup_form = ttk.LabelFrame(shell, text="Macro camera setup", padding=8)
+        setup_form.pack(fill="x", pady=(12, 0))
+        self.apply_camera_setup = tk.BooleanVar(value=True)
+        self.camera_preset = tk.StringVar(value=CAMERA_PRESETS[0])
+        ttk.Checkbutton(
+            setup_form, text="Apply before capturing", variable=self.apply_camera_setup,
+        ).pack(side="left")
+        ttk.Combobox(
+            setup_form, textvariable=self.camera_preset, values=CAMERA_PRESETS,
+            state="readonly", width=29,
+        ).pack(side="left", padx=(12, 0))
+        ttk.Button(
+            setup_form, text="Apply Now", command=self.apply_camera_now,
+        ).pack(side="left", padx=(8, 0))
 
         pan_form = ttk.LabelFrame(shell, text="Automatic panorama", padding=8)
         pan_form.pack(fill="x", pady=(12, 0))
@@ -242,8 +269,19 @@ class MapCamera:
         self.root.after(delay * 1000, self.take_capture)
 
     def take_capture(self) -> None:
+        hidden = False
         try:
-            frame = capture_roblox_frame()
+            hwnd = wm.find_roblox_window()
+            if not hwnd:
+                raise RuntimeError("Roblox was not found. Start the game and try again.")
+            if self.apply_camera_setup.get() and self.camera_preset.get() != "None":
+                self.root.withdraw()
+                hidden = True
+                wm.activate_window(hwnd)
+                run_camera_preset(
+                    self.auto_mouse, self.keyboard, hwnd, self.camera_preset.get())
+                time.sleep(0.35)
+            frame = capture_roblox_frame(hwnd)
             path = next_capture_path(CAPTURE_DIR, self.category.get(), self.map_name.get())
             save_png(frame, path)
             self.frame = frame
@@ -256,6 +294,31 @@ class MapCamera:
             messagebox.showerror("Map Camera", str(exc), parent=self.root)
         finally:
             self.capture_button.configure(state="normal")
+            if hidden:
+                self.root.deiconify()
+            self.root.lift()
+
+    def apply_camera_now(self) -> None:
+        hwnd = wm.find_roblox_window()
+        if not hwnd:
+            messagebox.showerror(
+                "Map Camera", "Roblox was not found. Start the game and try again.", parent=self.root)
+            return
+        preset = self.camera_preset.get()
+        if preset == "None":
+            self.status.set("Camera preset is None; nothing to apply.")
+            return
+        self.root.withdraw()
+        try:
+            wm.activate_window(hwnd)
+            run_camera_preset(self.auto_mouse, self.keyboard, hwnd, preset)
+            self.status.set(f"Applied macro camera preset: {preset}")
+        except Exception as exc:
+            self.status.set(str(exc))
+            self.root.deiconify()
+            messagebox.showerror("Map Camera", str(exc), parent=self.root)
+        finally:
+            self.root.deiconify()
             self.root.lift()
 
     def begin_auto_pan(self) -> None:
@@ -295,7 +358,20 @@ class MapCamera:
             delay = max(0, int(self.delay.get()))
         except ValueError:
             delay = 0
-        self.root.after(delay * 1000 + 350, self._auto_pan_step)
+        self.root.after(delay * 1000 + 350, self._prepare_auto_pan)
+
+    def _prepare_auto_pan(self) -> None:
+        if self.auto_stop_requested:
+            self._finish_auto_pan("Automatic panorama stopped.")
+            return
+        try:
+            if self.apply_camera_setup.get() and self.camera_preset.get() != "None":
+                run_camera_preset(
+                    self.auto_mouse, self.keyboard, self.auto_hwnd, self.camera_preset.get())
+                self.status.set(f"Applied {self.camera_preset.get()} camera setup; capturing…")
+            self.root.after(350, self._auto_pan_step)
+        except Exception as exc:
+            self._finish_auto_pan(str(exc), error=True)
 
     def _auto_pan_step(self) -> None:
         if self.auto_stop_requested:

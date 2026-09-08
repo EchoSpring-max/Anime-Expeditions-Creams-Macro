@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.5] - 2026-09-08
+
+### New
+- **Standalone camera setup**: Map Camera now applies the macro's exact Standard or Expedition top-down/zoom sequence before screenshots, without opening the main macro.
+
 ## [0.19.4] - 2026-09-08
 
 ### New
