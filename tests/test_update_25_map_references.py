@@ -8,6 +8,7 @@ EXPECTED_REFERENCES = (
     "Assets/map/Raid/Snowy Castle Act1.png",
     "Assets/map/Raid/Snowy Castle Act2.png",
     "Assets/map/Raid/Snowy Castle Act3.png",
+    "Assets/map/Portal/Sky Ruins Portal.png",
 )
 
 

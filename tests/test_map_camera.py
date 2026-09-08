@@ -6,6 +6,10 @@ import numpy as np
 from tools import map_camera
 
 
+def test_portal_is_a_capture_category():
+    assert "Portal" in map_camera.CATEGORIES
+
+
 def test_safe_component_removes_windows_path_characters():
     assert map_camera.safe_component('  Crimson: Shore?/Act 1  ') == "Crimson ShoreAct 1"
     assert map_camera.safe_component("...") == "Unnamed Map"

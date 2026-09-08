@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.8] - 2026-09-08
+
+### New
+- **Portal map references**: added the Sky Ruins Portal top-down map and a Portal category to the standalone Map Camera.
+
 ## [0.19.7] - 2026-09-08
 
 ### New

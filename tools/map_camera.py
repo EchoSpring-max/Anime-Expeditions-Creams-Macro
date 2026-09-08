@@ -34,7 +34,7 @@ from core.keyboard import Keyboard  # noqa: E402
 from core.mouse import Mouse  # noqa: E402
 
 
-CATEGORIES = ("Story", "Raid", "Expedition", "Event")
+CATEGORIES = ("Story", "Raid", "Portal", "Expedition", "Event")
 CAMERA_PRESETS = (
     "Zoom out only",
     "Full macro camera (top-down)",
