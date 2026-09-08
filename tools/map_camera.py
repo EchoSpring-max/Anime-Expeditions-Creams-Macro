@@ -16,7 +16,7 @@ from pathlib import Path
 import cv2
 from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import filedialog, messagebox, ttk
 
 # Running this file directly puts tools/ rather than the repository root on
 # sys.path. Add the root so the same core modules are used in source and frozen
@@ -66,6 +66,15 @@ def save_png(frame, path: Path) -> None:
     path.write_bytes(encoded.tobytes())
 
 
+def find_assets_dir(selection: Path) -> Path | None:
+    """Accept either the macro folder or its Assets folder."""
+    selection = Path(selection)
+    if selection.is_dir() and selection.name.casefold() == "assets":
+        return selection
+    assets = selection / "Assets"
+    return assets if assets.is_dir() else None
+
+
 def capture_roblox_frame():
     """Capture the Roblox client and normalize it to macro coordinates."""
     hwnd = wm.find_roblox_window()
@@ -95,6 +104,7 @@ class MapCamera:
         self.last_path: Path | None = None
         self.preview_image = None
         self.hotkey_registered = False
+        self.assets_dir = find_assets_dir(Path(constants.APP_DIR))
 
         root.title("Anime Expeditions Map Camera")
         root.geometry("620x560")
@@ -189,9 +199,20 @@ class MapCamera:
     def install_capture(self) -> None:
         if self.frame is None:
             return
+        if self.assets_dir is None:
+            selected = filedialog.askdirectory(
+                title="Select the macro folder (or its Assets folder)", parent=self.root)
+            if not selected:
+                return
+            self.assets_dir = find_assets_dir(Path(selected))
+            if self.assets_dir is None:
+                messagebox.showerror(
+                    "Map Camera", "That folder does not contain the macro's Assets folder.",
+                    parent=self.root)
+                return
         category = safe_component(self.category.get(), "Story")
         map_name = safe_component(self.map_name.get())
-        target = Path(constants.ASSETS_DIR) / "map" / category / f"{map_name}.png"
+        target = self.assets_dir / "map" / category / f"{map_name}.png"
         if target.exists() and not messagebox.askyesno(
                 "Replace map image?", f"Replace the existing image?\n\n{target}", parent=self.root):
             return

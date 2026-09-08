@@ -30,3 +30,11 @@ def test_save_png_round_trips_unicode_path(tmp_path: Path):
         np.frombuffer(target.read_bytes(), np.uint8), map_camera.cv2.IMREAD_COLOR)
     assert target.is_file()
     assert loaded is not None
+
+
+def test_find_assets_dir_accepts_macro_or_assets_folder(tmp_path: Path):
+    assets = tmp_path / "Assets"
+    assets.mkdir()
+    assert map_camera.find_assets_dir(tmp_path) == assets
+    assert map_camera.find_assets_dir(assets) == assets
+    assert map_camera.find_assets_dir(tmp_path / "missing") is None
