@@ -2,6 +2,11 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.3] - 2026-09-08
+
+### New
+- **Map Camera**: added a standalone F8 capture tool that saves normalized Roblox map screenshots and can install them directly into the Place Unit map library.
+
 ## [0.19.2] - 2026-09-08
 
 ### New
