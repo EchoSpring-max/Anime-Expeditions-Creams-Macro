@@ -2158,6 +2158,13 @@ const TASK_DATA = {
     stages: ['1', '2', '3'],
     fixedDifficulty: 'Hard',
   },
+  portal: {
+    label: 'Portal',
+    maps: ['Any Portal', 'Sky Ruins Portal', 'Summer Portal'],
+    tiers: ['Any', '1', '2', '3', '4', '5'],
+    fixedDifficulty: 'Hard',
+    isPortal: true,
+  },
   expedition: {
     label: 'Expedition',
     maps: ['School Grounds', 'Flower Forest', 'Rose Kingdom', 'East Town'],
@@ -2226,6 +2233,7 @@ function defaultTask() {
     map: TASK_DATA.story.maps[0], stage: '1', difficulty: 'Normal',
     infinite_wave_limit: DEFAULT_INFINITE_WAVE_LIMIT,
     extract_after: '1',
+    portal_tier: 'Any', portal_preferred_modifiers: [], portal_avoided_modifiers: [],
     repeat: 1, team: '', equipment: 'include', play_mode: 'solo', macro: '',
     // Event-only: auto-clear Villian Invasion Act 4 when a Crow Relic drops.
     // act4_mode 'once' spends one relic then resumes; 'until_locked' spends
@@ -2725,6 +2733,12 @@ function setTaskProp(id, key, value) {
     if (d.stages) t.stage = d.stages[0];
     if (d.difficulties) t.difficulty = d.difficulties[0];
     if (d.extractAfter) t.extract_after = '1';
+    if (d.isPortal) {
+      t.portal_tier = 'Any';
+      t.portal_preferred_modifiers = [];
+      t.portal_avoided_modifiers = [];
+      t.play_mode = 'solo';
+    }
     // Tournament has no Solo/Matchmaking toggle -- "Solo Tournament" already
     // is the mode, and the runner's solo Start tail only runs when this isn't
     // 'matchmaking'. Force it so switching from a matchmaking task can't leave
@@ -2745,12 +2759,34 @@ function setTaskProp(id, key, value) {
   saveTaskQueue();
 }
 
+const PORTAL_MODIFIERS = ['Resistance', 'Shielded', 'Short Range', 'Speedy', 'Traitless', 'Upgrade Cap'];
+
+function toggleTaskListValue(id, key, value) {
+  const t = findTask(id);
+  if (!t) return;
+  const values = Array.isArray(t[key]) ? [...t[key]] : [];
+  const index = values.indexOf(value);
+  if (index >= 0) values.splice(index, 1);
+  else values.push(value);
+  t[key] = values;
+  // A modifier cannot be both preferred and avoided. The last button the
+  // user pressed wins, which keeps imported/edited queues unambiguous too.
+  const opposite = key === 'portal_preferred_modifiers'
+    ? 'portal_avoided_modifiers' : 'portal_preferred_modifiers';
+  if (index < 0 && Array.isArray(t[opposite])) {
+    t[opposite] = t[opposite].filter(item => item !== value);
+  }
+  updateQueueRowInPlace(t);
+  renderTaskBuilder();
+  saveTaskQueue();
+}
+
 function taskOpts(list, current, fmt) {
   return list.map(o => `<option value="${escapeHtml(o)}" ${String(o) === String(current) ? 'selected' : ''}>${escapeHtml(fmt ? fmt(o) : o)}</option>`).join('');
 }
 
 // One accent per mode so the queue scans by color before you even read it.
-const TASK_MODE_COLORS = { story: 'var(--brand)', raid: 'var(--rose)', expedition: 'var(--teal)', event: 'var(--amber)', tournament: 'var(--lilac)', tower: 'var(--slate)' };
+const TASK_MODE_COLORS = { story: 'var(--brand)', raid: 'var(--rose)', portal: 'var(--teal)', expedition: 'var(--teal)', event: 'var(--amber)', tournament: 'var(--lilac)', tower: 'var(--slate)' };
 
 // The two text lines a queue row shows for a task -- where it goes, then how
 // it runs. All editing happens in the Builder, rows are read-only summaries.
@@ -2761,6 +2797,8 @@ function taskSummary(t) {
     title += ` · ${t.map} · ${/^\d+$/.test(t.stage) ? 'Stage ' + t.stage : t.stage}`;
   } else if (t.mode === 'expedition' || t.mode === 'tournament') {
     title += ` · ${t.map}`;
+  } else if (t.mode === 'portal') {
+    title += ` · ${t.map} · Tier ${t.portal_tier || 'Any'}`;
   } else if (t.mode === 'event') {
     title += ` · Act ${t.stage}`;
   }
@@ -2773,7 +2811,11 @@ function taskSummary(t) {
     t.mode === 'story' && t.stage === 'Infinite'
       ? `Stop after wave ${t.infinite_wave_limit || DEFAULT_INFINITE_WAVE_LIMIT}` : '',
     t.tower_mode === 'traitless' ? 'Traitless' : '',
-    (t.mode === 'tournament' || t.mode === 'tower') ? '' : (t.play_mode === 'matchmaking' ? 'Matchmaking' : 'Solo'),
+    t.mode === 'portal' && (t.portal_preferred_modifiers || []).length
+      ? `Prefer: ${t.portal_preferred_modifiers.join(', ')}` : '',
+    t.mode === 'portal' && (t.portal_avoided_modifiers || []).length
+      ? `Avoid: ${t.portal_avoided_modifiers.join(', ')}` : '',
+    (t.mode === 'tournament' || t.mode === 'tower' || t.mode === 'portal') ? '' : (t.play_mode === 'matchmaking' ? 'Matchmaking' : 'Solo'),
     t.macro ? `▸ ${t.macro}` : '',
     (t.mode === 'event' && t.stage !== '4' && t.act4_on_drop)
       ? `⮡ Act 4 on drop${t.act4_mode === 'until_locked' ? ' (until locked)' : ''}` : '',
@@ -2844,7 +2886,7 @@ function renderTaskBuilder() {
   const field = (label, control, tooltip = '') => `<div class="task-field" ${tooltip ? `data-tooltip="${escapeHtml(tooltip)}"` : ''}><span>${label}</span>${control}</div>`;
 
   const fields = [
-    field('Mode', sel('mode', Object.keys(TASK_DATA), k => TASK_DATA[k].label, 'Select game mode: Story, Raid, Expedition, Event, Tournament, or Tower'), 'Choose game mode'),
+    field('Mode', sel('mode', Object.keys(TASK_DATA), k => TASK_DATA[k].label, 'Select game mode: Story, Raid, Portal, Expedition, Event, Tournament, or Tower'), 'Choose game mode'),
     field('Repeat', `<div class="task-rep-group" style="width: 100%;">&times;<input type="number" min="1" value="${t.repeat}"
       oninput="setTaskProp('${t.id}', 'repeat', Math.max(1, parseInt(this.value, 10) || 1))"></div>`, 'Number of times to run this task'),
   ];
@@ -2855,6 +2897,10 @@ function renderTaskBuilder() {
     fields.push(field('Stage', sel('stage', d.stages, s => /^\d+$/.test(s) ? 'Stage ' + s : s, stageTooltip), stageTooltip));
   } else if (t.mode === 'expedition') {
     fields.push(field('Expedition', sel('map', d.maps, null, 'Select Expedition map')));
+  } else if (t.mode === 'portal') {
+    fields.push(field('Portal', sel('map', d.maps, null, 'Select a portal name, or any portal')));
+    fields.push(field('Tier', sel('portal_tier', d.tiers, value => value === 'Any' ? 'Any Tier' : 'Tier ' + value,
+      'Only use an owned portal at this tier')));
   } else if (t.mode === 'event') {
     fields.push(field('Act', sel('stage', d.stages, s => 'Act ' + s, 'Select Event Act 1-4'), 'Select Event Act 1-4'));
   } else if (t.mode === 'tournament') {
@@ -2892,13 +2938,29 @@ function renderTaskBuilder() {
 
   // Tournament and Tower have no Solo/Matchmaking choice -- their runner paths
   // force the solo Start tail, so the toggle would be a no-op here.
-  if (t.mode !== 'tournament' && t.mode !== 'tower') {
+  if (t.mode !== 'tournament' && t.mode !== 'tower' && t.mode !== 'portal') {
     const playSeg = `
       <div class="seg-toggle" data-tooltip="Select Solo or Matchmaking / Party mode">
         <button type="button" class="seg-btn ${t.play_mode === 'solo' ? 'active' : ''}" onclick="setTaskProp('${t.id}', 'play_mode', 'solo'); renderTaskBuilder()">Solo</button>
         <button type="button" class="seg-btn ${t.play_mode === 'matchmaking' ? 'active' : ''}" onclick="setTaskProp('${t.id}', 'play_mode', 'matchmaking'); renderTaskBuilder()">Matchmaking</button>
       </div>`;
     fields.push(field('Play Mode', playSeg, 'Select Solo or Matchmaking / Party mode'));
+  }
+
+  if (t.mode === 'portal') {
+    const modifierButtons = (key, selected, avoidedStyle = false) => `
+      <div class="seg-toggle" style="display: flex; flex-wrap: wrap; width: 100%;">
+        ${PORTAL_MODIFIERS.map(modifier => `
+          <button type="button" class="seg-btn ${selected.includes(modifier) ? 'active' : ''}"
+            style="flex: 1 1 30%; ${selected.includes(modifier) && avoidedStyle ? 'background: var(--rose); border-color: var(--rose);' : ''}"
+            onclick="toggleTaskListValue('${t.id}', '${key}', '${modifier}')">${modifier}</button>`).join('')}
+      </div>`;
+    const preferred = Array.isArray(t.portal_preferred_modifiers) ? t.portal_preferred_modifiers : [];
+    const avoided = Array.isArray(t.portal_avoided_modifiers) ? t.portal_avoided_modifiers : [];
+    fields.push(field('Preferred Modifiers', modifierButtons('portal_preferred_modifiers', preferred),
+      'Safe portals matching more selected modifiers are chosen first'));
+    fields.push(field('Avoid Modifiers', modifierButtons('portal_avoided_modifiers', avoided, true),
+      'Owned portals with any selected modifier are never activated'));
   }
 
   // Team Loadout rides with the chosen template (see the Macro Manager tab), so the
@@ -2954,11 +3016,14 @@ function renderTaskBuilder() {
     ? `<div class="wh-hint"><b>Stop After Wave</b> completes the wave you enter, waits for the counter to advance once, then uses Leave Stage and returns to the lobby. For example, 20 leaves when wave 21 begins.</div>` : '';
   const act4Hint = (t.mode === 'event' && t.stage !== '4' && t.act4_on_drop)
     ? `<div class="wh-hint">When a Crow Relic drops on a win, the run leaves this stage, clears Act 4 (Crow - Dawn) with its own Macro Operation above, then comes back. <b>Once</b> spends one relic; <b>Until locked</b> spends every banked relic. Give Act 4 its own Macro Operation ${'&#8212;'} it plays nothing like Acts 1-3.</div>` : '';
+  const portalHint = t.mode === 'portal'
+    ? `<div class="wh-hint"><b>Portal selection:</b> the macro opens Items with J, scans owned portals matching the name and tier, and activates the safest one. At the end of a win it hovers all three reward cards and picks the safest card with the most preferred modifiers. If every reward card is avoided, it accepts the least-bad one because the game forces a choice; it will never activate an owned portal carrying an avoided modifier.</div>` : '';
   el.innerHTML = `
     <div class="task-builder-grid">${fields.join('')}</div>
     ${extractHint}
     ${infiniteHint}
     ${act4Hint}
+    ${portalHint}
     <div class="wh-hint" style="margin-top: 8px;">The macro's Team Loadout comes from its template (Macro Manager tab).</div>
     <div class="flex items-center gap-2" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
       <button class="task-toolbar-btn add" onclick="cloneTaskCard('${t.id}')">&#10697; Clone Task</button>
@@ -2992,6 +3057,14 @@ async function refreshTaskQueue() {
         repairedExtractAfter++;
       }
       t.extract_after = normalizedExtractAfter;
+      t.portal_preferred_modifiers = Array.isArray(t.portal_preferred_modifiers)
+        ? t.portal_preferred_modifiers.filter(value => PORTAL_MODIFIERS.includes(value)) : [];
+      t.portal_avoided_modifiers = Array.isArray(t.portal_avoided_modifiers)
+        ? t.portal_avoided_modifiers.filter(value => PORTAL_MODIFIERS.includes(value)) : [];
+      // Avoid wins if a hand-edited/imported task contains a conflict.
+      t.portal_preferred_modifiers = t.portal_preferred_modifiers.filter(
+        value => !t.portal_avoided_modifiers.includes(value));
+      if (!TASK_DATA.portal.tiers.includes(String(t.portal_tier))) t.portal_tier = 'Any';
       t.stage = String(t.stage);
       if (t.difficulty === 'Infinite' || t.difficulty === 'Mastery') {
         t.stage = t.difficulty;
@@ -3028,6 +3101,7 @@ async function refreshTaskQueue() {
     let s = d.label;
     if (t.mode === 'story' || t.mode === 'raid') s += ` · ${t.map} · ${/^\d+$/.test(t.stage) ? 'Stage ' + t.stage : t.stage}`;
     if (t.mode === 'expedition') s += ` · ${t.map}`;
+    if (t.mode === 'portal') s += ` · ${t.map} · Tier ${t.portal_tier || 'Any'}`;
     return `${s} ×${t.repeat}`;
   }
 

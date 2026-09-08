@@ -137,11 +137,22 @@ python main.py
 
 ...or just double-click `run.bat`. (If you used the bootstrapper, just run it — it launches the app for you.) Start Roblox and join Anime Expeditions — the macro finds and docks the window automatically. From there:
 
-1. **Task** — queue up what to farm (map, stage, difficulty, repeat count).
+1. **Task** — queue up what to farm (Story, Raid, Portal, Expedition, Event, Tournament, or Tower).
 2. **Macro Manager** — build a Pre Start routine (unit placement, settings, walk path, clicks) and save it as a template.
 3. **Challenge** — optionally enable Regular Challenge automation and assign a Macro Operation per map (runs before the Task Queue on Start).
 4. **Dashboard** — assign a template to a task, hit Start, and monitor progress/stats live.
 5. **Settings** — hotkeys, Discord webhook, default walk paths, themes, and calibration/debug tools.
+
+### Portal tasks
+
+Choose **Portal** in the Task Builder, then select a portal name (or **Any
+Portal**), a tier from 1–5 (or **Any Tier**), and any preferred or avoided
+modifiers. The macro opens the new Items → Portals inventory, scans matching
+owned cards, and activates the safest match. After a win it inspects all three
+timed portal reward cards by hovering their modifier tooltips before choosing.
+Avoided modifiers are hard exclusions when activating an owned portal; when the
+game forces a reward choice and all three offers are avoided, the least-bad
+offer is accepted and logged.
 
 CLI diagnostics (no GUI) are available via:
 

@@ -2,6 +2,15 @@
 
 All notable changes to Anime Expeditions (Cream's Macro) are documented here.
 
+## [0.19.9] - 2026-09-08
+
+### New
+- **Portal task mode**: activate Sky Ruins, Summer, or any owned Portal at a selected tier directly from the Task Queue.
+- **Modifier-aware selection**: configure preferred and avoided Resistance, Shielded, Short Range, Speedy, Traitless, and Upgrade Cap modifiers. The macro scans owned portals and all three timed reward offers before choosing.
+
+### Safety
+- Owned portals carrying an avoided modifier are never activated. If every forced reward offer is avoided, the macro accepts the least-bad card and logs why.
+
 ## [0.19.8] - 2026-09-08
 
 ### New

@@ -38,6 +38,7 @@ from .runner_challenge import ChallengeOps
 from .runner_crafting import CraftingOps
 from .runner_expedition import ExpeditionOps
 from .runner_fuel import FuelOps
+from .runner_portal import PortalOps
 from .runner_shop import ShopOps
 
 
@@ -114,7 +115,8 @@ def _find_team_load_button(frame, expected_y):
     return cx, cy
 
 
-class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, ExpeditionOps, BlockOps):
+class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, PortalOps,
+                  ExpeditionOps, BlockOps):
     """One run's worth of state -- module-level singleton via main.Api, same
     pattern as core.paths._recorder, since only one run can realistically be
     active at a time (one physical game window, one macro)."""
@@ -145,6 +147,9 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
         # a Crow Relic and the task opted into auto-clearing Act 4; read (and
         # cleared) by _run_task, which runs the divert. See _run_act4_diversion.
         self._act4_wants_in = False
+        # Portal reward offers have an 18-second countdown. OCR-scanning all
+        # three hover tooltips is rate-limited in the normal result poll.
+        self._portal_last_reward_scan = 0.0
         # "Leave at Minute" battle block (see runner_blocks): battle clock +
         # the flag it sets when it leaves. Real values set per match in
         # _play_one_match; defaults here so the Settings > Debug battle test
@@ -1494,6 +1499,9 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
         once per repeat -- see the repeat loop in _run. Event mode takes its
         own lobby entry (nav_event -> event_gamemode -> Act) with no map or
         difficulty, then rejoins the shared confirm/Solo/Matchmaking tail."""
+        if mode == "portal":
+            return self._portal_activate_from_lobby(
+                hwnd, stop_event, task, webhook)
         if mode == "event":
             # Event is reached straight from the lobby (nav_event), not
             # through Play/gamemode/map, and has no difficulty picker -- so
@@ -2040,6 +2048,15 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
                 self._interruptible_sleep(MATCH_RESULT_POLL_INTERVAL, stop_event)
                 continue
 
+            # Portal wins show a forced three-card reward choice BEFORE the
+            # normal Victory panel. Inspect each hover tooltip while the
+            # countdown is running so user modifier preferences are honored
+            # instead of letting the game auto-pick a random card.
+            if mode == "portal" and self._portal_pick_reward_if_visible(
+                    hwnd, stop_event, task or {}):
+                self._interruptible_sleep(MATCH_RESULT_POLL_INTERVAL, stop_event)
+                continue
+
             try:
                 victory_match = vision.find_image(hwnd, "victory")
             except vision.TemplateNotFound as exc:
@@ -2222,6 +2239,13 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
         # _wait_teleport_in whenever this is why it's about to see Leave
         # Stage clicked with more repeats still left).
         is_matchmaking = task.get("play_mode") == "matchmaking"
+        if repeat and task.get("mode") == "portal":
+            # Portal has no Repeat Stage button. Victory's Select Portal opens
+            # the player's portal inventory; choose the next safe owned card
+            # by the same modifier rules, then the caller waits for teleport.
+            self._set_status(action=f"{label} -- selecting the next portal...")
+            return self._portal_select_from_victory(hwnd, stop_event, task)
+
         if repeat and not is_matchmaking:
             # More repeats left on this task -- Repeat Stage re-queues the
             # same stage directly, skipping the lobby/gamemode/map/stage
@@ -2346,6 +2370,8 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
             stage = "-"
         elif mode in ("raid", "event"):
             stage = f"Act {raw_stage}" if raw_stage != "-" else "-"
+        elif mode == "portal":
+            stage = f"Tier {task.get('portal_tier') or 'Any'}"
         elif str(raw_stage).isdigit():
             stage = f"Stage {raw_stage}"
         else:
@@ -2355,7 +2381,7 @@ class MacroRunner(BountyOps, ChallengeOps, CraftingOps, FuelOps, ShopOps, Expedi
         # setting never actually applies there, so reporting it verbatim
         # was showing e.g. "Normal" for a run that was really Hard. Event has
         # no difficulty at all.
-        if mode == "raid" or raw_stage in SPECIAL_STAGES_NO_DIFFICULTY:
+        if mode in ("raid", "portal") or raw_stage in SPECIAL_STAGES_NO_DIFFICULTY:
             difficulty = "Hard"
         elif mode in ("event", "tournament", "tower"):
             difficulty = "-"
